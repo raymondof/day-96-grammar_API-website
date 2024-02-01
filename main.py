@@ -2,9 +2,31 @@ from flask import Flask, abort, render_template, redirect, url_for, flash, reque
 from flask_sqlalchemy import SQLAlchemy
 import requests
 import os
+import csv
 
 app = Flask(__name__)
 
+
+# Define the CSV file name and path
+csv_file_name = "./static/assets/data/data.csv"
+
+# Check if the CSV file exists
+if not os.path.exists(csv_file_name):
+    # Create the CSV file with header
+    with open(csv_file_name, 'w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(['Original Text', 'Corrected Text'])
+else:
+    # CSV file already exists, no need to create it again
+    print(f"{csv_file_name} already exists.")
+
+# Open the CSV file and print its contents to the console
+with open(csv_file_name, 'r') as file:
+    reader = csv.reader(file)
+    header = next(reader)  # Skip the header row
+    print("\nCSV File Contents:")
+    for row in reader:
+        print(row[0], "|", row[1])
 
 
 def grammar_bot(text):
@@ -26,49 +48,30 @@ def grammar_bot(text):
 
 @app.route("/")
 def main():
-    with app.app_context():
-        all_tasks = [1, 2, 3]
-        all_ready_tasks = ["a", "b", "c"]
-        # result = db.session.execute(db.select(Task).order_by(Task.task_name))
-        # all_tasks = [task.task_name for task in result.scalars()]
-        #
-        # ready_result = db.session.execute(db.select(ReadyTask).order_by(ReadyTask.task_name))
-        # all_ready_tasks = [task.task_name for task in ready_result.scalars()]
-    return render_template("index.html", tasks=all_tasks, ready_tasks=all_ready_tasks)
+    # Open the CSV file and read its contents
+    with open(csv_file_name, 'r') as file:
+        reader = csv.reader(file)
+        header = next(reader)  # Skip the header row
+        rows = [row for row in reader]
 
-@app.route("/add-task", methods=["POST"])
-def add_task():
-    text_to_check = request.form["text_to_correct"]
-    response = grammar_bot(text_to_check).json()
+    # Reverse the rows to display in opposite order
+    reversed_rows = rows[::-1]
+
+    return render_template("index.html", header=header, rows=reversed_rows)
+
+
+@app.route("/correct-text", methods=["POST"])
+def correct_text():
+    original_text = request.form["text_to_correct"]
+    response = grammar_bot(original_text).json()
     corrected_text = response["correction"]
-    print(corrected_text)
 
+    # Add the new data to the CSV file
+    with open(csv_file_name, 'a', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow([original_text, corrected_text])
 
-    return render_template("index.html", corrected_text=corrected_text)
-
-
-
-
-# @app.route("/check-ready-task", methods=["POST"])
-# def check_ready_task():
-#     selected_task_name = request.form.get("task")
-#     task_to_move = Task.query.filter_by(task_name=selected_task_name).first()
-#
-#     if task_to_move:
-#         # Create a new ReadyTask instance with the task name
-#         ready_task = ReadyTask(task_name=task_to_move.task_name)
-#
-#         # Add the ReadyTask instance to the session
-#         db.session.add(ready_task)
-#
-#         # Commit the changes to the ReadyTask table
-#         db.session.commit()
-#
-#         # Remove the task from the Task table
-#         db.session.delete(task_to_move)
-#         db.session.commit()
-#
-#     return redirect(url_for("main"))
+    return redirect("/")
 
 
 if __name__ == "__main__":
