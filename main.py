@@ -1,14 +1,12 @@
-from flask import Flask, abort, render_template, redirect, url_for, flash, request
-from flask_sqlalchemy import SQLAlchemy
+from flask import Flask, render_template, redirect, request
 import requests
 import os
 import csv
 
 app = Flask(__name__)
 
-
 # Define the CSV file name and path
-csv_file_name = "./static/assets/data/data.csv"
+csv_file_name = "static/assets/data/data.csv"
 
 # Check if the CSV file exists
 if not os.path.exists(csv_file_name):
@@ -20,13 +18,13 @@ else:
     # CSV file already exists, no need to create it again
     print(f"{csv_file_name} already exists.")
 
-# Open the CSV file and print its contents to the console
-with open(csv_file_name, 'r') as file:
-    reader = csv.reader(file)
-    header = next(reader)  # Skip the header row
-    print("\nCSV File Contents:")
-    for row in reader:
-        print(row[0], "|", row[1])
+# # Open the CSV file and print its contents to the console
+# with open(csv_file_name, 'r') as file:
+#     reader = csv.reader(file)
+#     header = next(reader)  # Skip the header row
+#     print("\nCSV File Contents:")
+#     for row in reader:
+#         print(row[0], "|", row[1])
 
 
 def grammar_bot(text):
@@ -36,7 +34,7 @@ def grammar_bot(text):
         "X-RapidAPI-Host": "grammarbot-neural.p.rapidapi.com",
         "X-RapidAPI-Key": os.environ["X-RapidAPI-Key"]
     }
-    dummy_text = "This are somme well-writen text. bu how bad tecxt u cn fix."
+
     data = {
         "text": text,
         "lang": "en"
@@ -49,8 +47,8 @@ def grammar_bot(text):
 @app.route("/")
 def main():
     # Open the CSV file and read its contents
-    with open(csv_file_name, 'r') as file:
-        reader = csv.reader(file)
+    with open(csv_file_name, 'r') as data:
+        reader = csv.reader(data)
         header = next(reader)  # Skip the header row
         rows = [row for row in reader]
 
@@ -67,9 +65,9 @@ def correct_text():
     corrected_text = response["correction"]
 
     # Add the new data to the CSV file
-    with open(csv_file_name, 'a', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow([original_text, corrected_text])
+    with open(csv_file_name, 'a', newline='') as data:
+        text_writer = csv.writer(data)
+        text_writer.writerow([original_text, corrected_text])
 
     return redirect("/")
 
